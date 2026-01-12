@@ -32,54 +32,25 @@ class Follower(Node):
         self.follower_theta = msg.theta
 
     def control_loop(self):
-        # Compute distance and angle from follower (turtle2) to leader
-        dx = self.leader_x - self.follower_x
-        dy = self.leader_y - self.follower_y
-        distance = math.sqrt(dx * dx + dy * dy)
-
-        cmd = Twist()
-
-
-        if distance > 0.2:
-            target_theta = math.atan2(dy, dx)
-            angle_error = target_theta - self.follower_theta
-
-            # Normalize angle to [-pi, pi]
-            angle_error = math.atan2(math.sin(angle_error), math.cos(angle_error))
-
-            # Simple P controller
-            kp_linear = 1.5
-            kp_angular = 4.0
-
-            cmd.linear.x = max(min(kp_linear * distance, 2.0), -2.0)
-            cmd.angular.z = max(min(kp_angular * angle_error, 4.0), -4.0)
-
-        self.follower_cmd_vel.publish(cmd)
-    def control_loop(self):
         dx = self.leader_x - self.follower_x
         dy = self.leader_y - self.follower_y
         distance = math.sqrt(dx*dx + dy*dy)
-
         cmd = Twist()
-
-    # Stop completely when very close
-        if distance <= 0.15:          # smaller threshold
+    
+        if distance > 0.2:
+            target_theta = math.atan2(dy, dx)
+            angle_error = math.atan2(math.sin(target_theta - self.follower_theta), math.cos(target_theta - self.follower_theta))
+            cmd.linear.x = max(min(1.5 * distance, 2.0), -2.0)
+            cmd.angular.z = max(min(4.0 * angle_error, 4.0), -4.0)
+        elif distance > 0.15:
+            target_theta = math.atan2(dy, dx)
+            angle_error = math.atan2(math.sin(target_theta - self.follower_theta), math.cos(target_theta - self.follower_theta))
+            cmd.linear.x = max(min(1.0 * distance, 1.5), -1.5)
+            cmd.angular.z = max(min(3.0 * angle_error, 3.0), -3.0)
+        else:
             cmd.linear.x = 0.0
             cmd.angular.z = 0.0
-            self.follower_cmd_vel.publish(cmd)
-            return                   # exit early, no more control
-
-    # Otherwise do P-control
-        target_theta = math.atan2(dy, dx)
-        angle_error = target_theta - self.follower_theta
-        angle_error = math.atan2(math.sin(angle_error), math.cos(angle_error))
-
-        kp_linear = 1.0              # slightly smaller for smoother approach
-        kp_angular = 3.0
-
-        cmd.linear.x = max(min(kp_linear * distance, 1.5), -1.5)
-        cmd.angular.z = max(min(kp_angular * angle_error, 3.0), -3.0)
-
+    
         self.follower_cmd_vel.publish(cmd)
 
 
@@ -91,3 +62,4 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+    
